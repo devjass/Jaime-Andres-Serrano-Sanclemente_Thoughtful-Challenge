@@ -17,3 +17,5 @@ testrun/*
 .~lock*
 *.pkl
 *.xlsx
+*key_github
+*key_github.pub
