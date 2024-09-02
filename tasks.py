@@ -26,7 +26,7 @@ def main_task():
 
     # Variables Definition
     search_phrase = "Donald Trump"
-    number_months = 2
+    number_months = 1
     news_url = "https://apnews.com/"
     path_images = "./Images_downloaded"
     dictionary_date = {}
@@ -198,7 +198,7 @@ class CreateBrowserDriverFlow:
         self.driver.maximize_window()
         self.driver.get(self.url)
 
-    def borrar_contenido_carpeta(path_folder):
+    def borrar_contenido_carpeta(self,path_folder):
         # Verifica si la path_folder existe
         if not os.path.exists(path_folder):
             print(f"La path_folder {path_folder} no existe.")
@@ -242,96 +242,116 @@ class CreateBrowserDriverFlow:
 
         image_counter = 1
         original_windows = self.driver.current_window_handle
+        os.makedirs(os.path.dirname(path_images + "/1.jpg"), exist_ok=True)
+        self.borrar_contenido_carpeta(path_images + "/")
         while(flag_flow):
+            try:
+                windows_number = len(self.driver.window_handles)
+                windows_opened = self.driver.window_handles
+                if(windows_number > 1):
+                    self.driver.switch_to.window(windows_opened[1])
+                    self.driver.close() # Close New Borwser Tab
+                    self.driver.switch_to.window(original_windows)
 
-            windows_number = len(self.driver.window_handles)
-            windows_opened = self.driver.window_handles
-            if(windows_number > 1):
-                self.driver.switch_to.window(windows_opened[1])
-                self.driver.close() # Close New Borwser Tab
-                self.driver.switch_to.window(original_windows)
-
-            div_2 = self.driver.find_element(By.CLASS_NAME,"SearchResultsModule-results")
-            news_divs_list_elements = div_2.find_elements(By.CLASS_NAME,"PageList-items-item")
-            for new_div_element in news_divs_list_elements:
-                try:
-                    self.key_escape_message()
-
-                    title = ""
-                    description = ""
-                    new_date = ""
-                    picture_filename_downloaded = ""
-                    data_row = [title,new_date,description,picture_filename_downloaded]
-
-                    # Extract Title
-                    div_title = new_div_element.find_element(By.CLASS_NAME,"PagePromo-title")
-                    title = str(div_title.find_element(By.TAG_NAME,"span").text).strip()
-                    data_row = [title,new_date,description,picture_filename_downloaded]
-                    first_save_dataframe(data_row)
-
-                    # Open new in new browser tab to extract Date                    
-                    a_link_title = div_title.find_element(By.TAG_NAME,"a")
-                    WebDriverWait(self.driver,5).until(EC.element_to_be_clickable(a_link_title))
-                    a_link_title.send_keys(Keys.CONTROL + Keys.RETURN)
-                    original_windows = self.driver.current_window_handle
-                    for i in range(1,20): 
-                        time.sleep(0.5)
-                        windows_opened = self.driver.window_handles
-                        windows_number = len(self.driver.window_handles)
-                        if(windows_number > 1):
-                            self.driver.switch_to.window(windows_opened[1])
-                            break
-                    if(windows_number > 1):
-                        try:
-                            main_div_new_browser_tab = self.driver.find_element(By.CLASS_NAME,"Page-content")
-                            bsp_element = main_div_new_browser_tab.find_element(By.TAG_NAME,"bsp-timestamp")
-                            new_date = str(bsp_element.find_element(By.TAG_NAME,"span").text).strip()
-                            list_date_text = new_date.split(',')
-                            date_text_1 = str(list_date_text[1] + ',' + list_date_text[2]).strip()
-                            if(verify_dictionary_date(date_text_1, dictionary_date)):
-                                data_row = [title,new_date,description,picture_filename_downloaded]
-                                last_save_dataframe(data_row)
-                            else: 
-                                flag_flow = False
-                                break
-                        except:                            
-                            print("Exception to try extracting date information, posibly this new doesn't have date.")
-                        self.driver.close() # Close New Borwser Tab
-                        self.driver.switch_to.window(original_windows)
-
-                    # Extract Description
-                    description = str(new_div_element.find_element(By.TAG_NAME,"span").text).strip()
-                    data_row = [title,new_date,description,picture_filename_downloaded]
-                    last_save_dataframe(data_row)
-
-                    # Donwload image and save the picture file name
+                main_div = self.driver.find_element(By.CLASS_NAME,"SearchResultsPage-content")
+                main_tag = main_div.find_element(By.TAG_NAME,"main")
+                div_result = main_tag.find_element(By.CLASS_NAME,"SearchResultsModule-results")
+                news_divs_list_elements = div_result.find_elements(By.CLASS_NAME,"PageList-items-item")
+                for new_div_element in news_divs_list_elements:
                     try:
-                        list_divs = new_div_element.find_elements(By.TAG_NAME,"div")
-                        div_data = ""
-                        for div_1 in list_divs:
-                            print(f"{div_1.get_attribute('class')}")
-                            if(div_1.get_attribute('class') == "PagePromo"):
-                                div_data = div_1
+                        self.key_escape_message()
+
+                        title = ""
+                        description = ""
+                        new_date = ""
+                        picture_filename_downloaded = ""
+                        data_row = [title,new_date,description,picture_filename_downloaded]
+
+                        # Open new in new browser tab to extract Date
+                        div_title = new_div_element.find_element(By.CLASS_NAME,"PagePromo-title")
+                        a_link_title = div_title.find_element(By.TAG_NAME,"a")
+                        WebDriverWait(self.driver,5).until(EC.element_to_be_clickable(a_link_title))
+                        a_link_title.send_keys(Keys.CONTROL + Keys.RETURN)
+                        original_windows = self.driver.current_window_handle
+                        for i in range(1,20): 
+                            time.sleep(0.5)
+                            windows_opened = self.driver.window_handles
+                            windows_number = len(self.driver.window_handles)
+                            if(windows_number > 1):
+                                self.driver.switch_to.window(windows_opened[1])
                                 break
-                        image_element = div_data.find_element(By.TAG_NAME,"img")
-                        image_url = image_element.get_attribute('src')
-                        image_data = requests.get(image_url).content
-                        # Download the image
-                        os.makedirs(os.path.dirname(path_images), exist_ok=True)
-                        self.borrar_contenido_carpeta(path_images)
-                        with open(path_images + f"image_{image_counter}",'wb') as file:
-                            file.write(image_data)
-                        picture_filename_downloaded = f"image_{image_counter}"
+                        if(windows_number > 1):
+                            try:
+                                main_div_new_browser_tab = self.driver.find_element(By.CLASS_NAME,"Page-content")
+                                bsp_element = main_div_new_browser_tab.find_element(By.TAG_NAME,"bsp-timestamp")
+                                new_date = str(bsp_element.find_element(By.TAG_NAME,"span").text).strip()
+                                list_date_text = new_date.split(',')
+                                date_text_1 = str(list_date_text[1] + ',' + list_date_text[2]).strip()
+                                if(verify_dictionary_date(date_text_1, dictionary_date)):
+                                    data_row = [title,new_date,description,picture_filename_downloaded]
+                                    first_save_dataframe(data_row)
+                                else: 
+                                    flag_flow = False
+                                    print("Already don't exist more news that are into date range.")
+                                    break
+                            except:                            
+                                print("Exception to try extracting date information, posibly this new doesn't have date.")
+                            self.driver.close() # Close New Borwser Tab
+                            self.driver.switch_to.window(original_windows)
+
+                        # Extract Title
+                        title = str(div_title.find_element(By.TAG_NAME,"span").text).strip()
                         data_row = [title,new_date,description,picture_filename_downloaded]
                         last_save_dataframe(data_row)
-                        image_counter += 1
-                    except:
-                        print("The new doesn't have image.")
 
-                except Exception as e: # Exception For
-                    print(f"Exception, {e},{e.args},{e.__cause__}")
+                        # Extract Description                        
+                        div_description = new_div_element.find_element(By.CLASS_NAME,"PagePromo-description")
+                        description = str(div_description.find_element(By.TAG_NAME,"span").text).strip()
+                        data_row = [title,new_date,description,picture_filename_downloaded]
+                        last_save_dataframe(data_row)
+
+                        # Donwload image and save the picture file name
+                        try:
+                            list_divs = new_div_element.find_elements(By.TAG_NAME,"div")
+                            div_data = ""
+                            for div_1 in list_divs:
+                                print(f"{div_1.get_attribute('class')}")
+                                if(div_1.get_attribute('class') == "PagePromo"):
+                                    div_data = div_1
+                                    break
+                            image_element = div_data.find_element(By.TAG_NAME,"img")
+                            image_url = image_element.get_attribute('src')
+                            image_data = requests.get(image_url).content
+                            # Download the image
+                            with open(path_images + f"/image_{image_counter}.jpg",'wb') as file:
+                                file.write(image_data)
+                            picture_filename_downloaded = f"image_{image_counter}.jpg"
+                            data_row = [title,new_date,description,picture_filename_downloaded]
+                            last_save_dataframe(data_row)
+                            image_counter += 1
+                        except:
+                            print("The new doesn't have image.")
+
+                    except Exception as e: # Exception For
+                        print(f"Exception for, {e},{e.args},{e.__cause__}")
+                
+                try:
+                    self.key_escape_message()
+                    div_pagination = main_div.find_element(By.CLASS_NAME,"Pagination")
+                    div_next_page = div_pagination.find_element(By.CLASS_NAME,"Pagination-nextPage")
+                    button_next_page = div_next_page.find_element(By.TAG_NAME,"a")
+                    WebDriverWait(self.driver,5).until(EC.element_to_be_clickable(button_next_page)).click()
+                except:
+                    flag_flow = False
+                    print(f"Don't exist more pages.")                    
+
+            except Exception as e:
+                print(f"Exception while, {e},{e.args},{e.__cause__}")
             
         self.flow_extract_flag = True
+
+        return self.flow_extract_flag
+
 
     def key_escape_message(self):
         tipo_elemento = "TAG_NAME"

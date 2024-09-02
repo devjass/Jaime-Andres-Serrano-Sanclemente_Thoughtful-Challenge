@@ -4,6 +4,7 @@ temp/
 .rpa/
 .idea/
 .ipynb_checkpoints/
+.Images_downloaded/
 */.ipynb_checkpoints/*
 .virtual_documents/
 */.virtual_documents/*
