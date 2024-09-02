@@ -1,4 +1,4 @@
-# Template: Python - Minimal
+# Template: Python - Minimal Challenge
 
 This template leverages the new [Python framework](https://github.com/robocorp/robocorp), the [libraries](https://github.com/robocorp/robocorp/blob/master/docs/README.md#python-libraries) from to same project as well.
 
